@@ -1,0 +1,12 @@
+# Ignore datasets
+dataset_final/
+yolo_dataset_single_class/
+yolo_dataset_multiclass/
+
+# Ignore training results and runs
+yolo_results/
+runs/
+
+# Ignore Python cache files
+__pycache__/
+*.cache
