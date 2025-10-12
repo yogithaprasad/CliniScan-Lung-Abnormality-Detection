@@ -2,29 +2,17 @@
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://cliniscan-lung-abnormality-detection-yogithaprasad.streamlit.app/)
 
-An end-to-end deep learning portfolio project demonstrating a complete pipeline for detecting and classifying abnormalities in chest X-ray images. This project showcases data preprocessing, model training, and deployment of a multi-model system into an interactive web application with Streamlit.
+An end-to-end deep learning portfolio project demonstrating a complete pipeline for detecting and classifying abnormalities in chest X-ray images, built with Python, YOLOv8, TensorFlow, and deployed as an interactive web application with Streamlit.
 
 ---
 
-## 🎥 Live Demonstration & Access
+## 🎥 Live Demonstration
 
-The application is deployed and publicly accessible. Interact with the live version:
+The application is deployed and publicly accessible. Click the image below to watch a full video walkthrough of the application's features and functionality.
 
-**[https://cliniscan-lung-abnormality-detection-yogithaprasad.streamlit.app/](https://cliniscan-lung-abnormality-detection-yogithaprasad.streamlit.app/)**
+[![CliniScan Demo Video](assets/demo_thumbnail.png)](assets/demo.mp4)
 
-### Application in Action
-
-A video walkthrough of the application's features and functionality is available below.
-
-**[Click Here to Watch the Demo Video](assets/demo.mp4)**
-
-<br>
-
-<p align="center">
-  <img src="assets/clinican_app_qr_code.png" alt="QR Code to Live App" width="200"/>
-  <br>
-  <em>Scan the QR code to open the live application on your mobile device.</em>
-</p>
+**[Interact with the Live Application Here](https://cliniscan-lung-abnormality-detection-yogithaprasad.streamlit.app/)**
 
 ---
 
@@ -32,7 +20,7 @@ A video walkthrough of the application's features and functionality is available
 - [About The Project](#about-the-project)
 - [Key Features](#key-features)
 - [Methodology: The AI Pipeline](#methodology-the-ai-pipeline)
-- [Technology Stack](#technology-stack)
+- [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
 - [How to Run Locally](#-how-to-run-locally)
 - [Development Milestones](#-development-milestones)
