@@ -12,7 +12,7 @@ A live, deployed version of this application is available for interaction:
 **[https://cliniscan-lung-abnormality-detection-yogithaprasad.streamlit.app/](https://cliniscan-lung-abnormality-detection-yogithaprasad.streamlit.app/)**
 
 You can also watch a video walkthrough of the application's features and functionality:
-**[Watch the Demo Video Here](PASTE_YOUR_YOUTUBE_OR_DEMO_VIDEO_LINK_HERE)**
+**[Watch the Demo Video Here](D:\CliniScan-Portfolio\assets\web_working_demo_video)**
 
 <br>
 
