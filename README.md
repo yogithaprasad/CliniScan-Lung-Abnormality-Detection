@@ -36,7 +36,8 @@ This project was developed to tackle the challenges of working with complex medi
 **This tool is for educational and demonstration purposes only and is not a certified medical device intended for real-world diagnostic use.**
 
 ## Key Features
-- **Dual-Model System:** Utilizes two distinct AI models for a comprehensive, two-stage analysis.
+- **Robust Input Validation:** A pre-processing model automatically validates uploaded images, rejecting incorrect types (e.g., photos of cats, other body part X-rays) to ensure the integrity of the analysis pipeline.
+- **Dual-Model System:** Utilizes two distinct AI models for a comprehensive, two-stage analysis post-validation.
 - **Interactive Web Interface:** A user-friendly application built with Streamlit that allows for easy image upload and interaction.
 - **Model Interpretability:** Implements Grad-CAM to generate heatmaps, providing visual insight into the classification model's decision-making process.
 - **Flexible Detection:** Allows users to switch between a general single-class detector and a more specific multi-class detector to compare results.
@@ -45,17 +46,18 @@ This project was developed to tackle the challenges of working with complex medi
 
 ## Methodology: The AI Pipeline
 
-The application uses a sequential, two-stage process for analysis:
+The application uses a sequential, three-stage process for a robust and accurate analysis:
 
-1.  **Classification:** A ResNet50-based Convolutional Neural Network (CNN) first analyzes the entire image to determine if it is **'Normal'** or **'Abnormal'**. This acts as an initial, high-level screening.
-2.  **Detection:** If the image is deemed 'Abnormal', a **YOLOv8** object detection model is then used to draw bounding boxes around the specific regions of interest that it identifies as potential abnormalities.
-3.  **Visualization:** For all 'Abnormal' classifications, a **Grad-CAM (Gradient-weighted Class Activation Mapping)** heatmap is generated. This visualization highlights the pixels the classification model focused on most, providing insight into its decision-making process.
+1.  **Validation (Gatekeeper):** A lightweight, fine-tuned **MobileNetV2** model first acts as a gatekeeper. It validates that the uploaded image is a legitimate chest X-ray before allowing it to proceed, rejecting any invalid images.
+2.  **Classification (Screening):** If the image is valid, a **ResNet50-based CNN** analyzes the entire image to determine if it is **'Normal'** or **'Abnormal'**. This acts as a high-level screening.
+3.  **Detection (Localization):** If the image is classified as 'Abnormal', a **YOLOv8** object detection model is then used to draw bounding boxes around the specific regions of interest that it identifies as potential abnormalities.
+4.  **Visualization (Interpretability):** For all 'Abnormal' classifications, a **Grad-CAM** heatmap is generated to highlight the pixels the classification model focused on, providing insight into its decision-making process.
 
 ## 🛠️ Technology Stack
 
 - **Backend & Web Framework:** Python, Streamlit
 - **Object Detection:** PyTorch, Ultralytics YOLOv8
-- **Classification:** TensorFlow, Keras (ResNet50)
+- **Classification & Validation:** TensorFlow, Keras (ResNet50, MobileNetV2)
 - **Data Handling & Image Processing:** Pandas, NumPy, OpenCV, Pillow
 - **Deployment:** Streamlit Community Cloud
 - **Version Control:** Git & GitHub (with Git LFS for large model handling)
@@ -65,9 +67,9 @@ The application uses a sequential, two-stage process for analysis:
 This repository is organized into a professional, modular structure to separate concerns and improve maintainability:
 - `/app.py`: The main Streamlit application script that handles the UI and page routing.
 - `/src/`: Contains helper modules, such as `utils.py` for visualization functions.
-- `/models/`: Stores the final, trained model weights (`.pt` and `.h5` files).
+- `/models/`: Stores the final, trained model weights (`.pt`, `.h5`), including the new `chest_xray_validator.h5` model.
 - `/assets/`: Contains static assets like images for the UI and all model performance charts.
-- `/scripts/`: Includes scripts for one-time tasks like training the models.
+- `/scripts/`: Includes utility and training scripts, such as `train_validator.py` and `prepare_balanced_dataset.py`.
 - `/.streamlit/config.toml`: Configuration file for the Streamlit dark theme.
 - `/requirements.txt`: A list of all necessary Python packages for easy setup.
 
@@ -95,4 +97,4 @@ This project was developed through a series of key milestones:
 - **Milestone 1: Data Preprocessing & Setup:** Processed and cleaned two distinct chest X-ray datasets, converting annotations to a unified format.
 - **Milestone 2: Model Training & Experimentation:** Trained and compared multiple YOLOv8 and ResNet50 models to identify the best performers for integration.
 - **Milestone 3: Application Development:** Built the core Streamlit application, integrating the best-performing classifier and detectors.
-- **Milestone 4: Final Polish & Deployment:** Refined the UI/UX, added professional features like Grad-CAM and downloadable reports, and deployed the final application to Streamlit Community Cloud.
+- **Milestone 4: Adding Robustness & Final Polish:** Implemented an image validation model to reject incorrect inputs, refined the UI/UX, added Grad-CAM, and deployed the final application to Streamlit Community Cloud.
