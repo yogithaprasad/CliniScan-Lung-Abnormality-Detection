@@ -10,3 +10,12 @@ runs/
 # Ignore Python cache files
 __pycache__/
 *.cache
+# Ignore the large datasets
+validator_dataset/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store

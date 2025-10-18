@@ -1,5 +1,5 @@
 # =============================================================================
-# CliniScan AI: Final Professional Application (Definitive Version)
+# CliniScan AI: Final Professional Application (with Image Validation)
 # Author: Yogitha Prasad
 # =============================================================================
 
@@ -8,6 +8,7 @@ from ultralytics import YOLO
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image as keras_image
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input # <-- NEW
 import numpy as np
 import cv2
 from PIL import Image
@@ -17,36 +18,59 @@ import pandas as pd
 # --- CONFIGURATION ---
 st.set_page_config(page_title="CliniScan AI", layout="wide", initial_sidebar_state="expanded")
 
-# --- CUSTOM CSS FOR LARGER FONTS ---
+# --- CUSTOM CSS ---
 st.markdown("""
 <style>
-/* Your CSS from the last working version */
+/* Your existing CSS */
 </style>
 """, unsafe_allow_html=True)
 
-# --- PATHS (Based on your final, correct file scan) ---
+# --- PATHS ---
 MODELS = {
     "Single-Class Detector": {"path": "models/model_singleclass_detector/weights/best.pt", "run_dir": "assets/singleclass_detector"},
     "Multi-Class Detector": {"path": "models/model_multiclass_detector/weights/best.pt", "run_dir": "assets/multiclass_detector"},
-    "Classifier": {"path": "models/model_resnet_classification/best_classifier.h5", "run_dir": "assets/classification"}
+    "Classifier": {"path": "models/model_resnet_classification/best_classifier.h5", "run_dir": "assets/classification"},
+    "Validator": {"path": "models/chest_xray_validator.h5"} # <-- NEW
 }
 
 # --- HELPER FUNCTIONS ---
 @st.cache_resource
-def load_models():
-    """Loads all models safely."""
+def load_all_models(): # <-- MODIFIED FUNCTION NAME
+    """Loads all models safely, including the new validator."""
     try:
         detector_single = YOLO(MODELS["Single-Class Detector"]["path"])
         detector_multi = YOLO(MODELS["Multi-Class Detector"]["path"])
         classifier = load_model(MODELS["Classifier"]["path"], compile=False)
-        return {"Single-Class Detector": detector_single, "Multi-Class Detector": detector_multi}, classifier
+        validator = load_model(MODELS["Validator"]["path"]) # <-- NEW
+        return {"Single-Class Detector": detector_single, "Multi-Class Detector": detector_multi}, classifier, validator
     except Exception as e:
         st.error(f"FATAL ERROR LOADING MODELS: {e}. Please check your file structure and paths.")
-        return None, None
+        return None, None, None
+
+def is_chest_xray(image_pil, validator_model): # <-- NEW VALIDATOR FUNCTION
+    """
+    Checks if an uploaded image is a chest X-ray using the validator model.
+    Returns True if it is a chest X-ray, False otherwise.
+    """
+    # Preprocess the image for the validator model (MobileNetV2)
+    img = image_pil.resize((224, 224))
+    img_array = keras_image.img_to_array(img)
+    img_array_expanded = np.expand_dims(img_array, axis=0)
+    img_preprocessed = preprocess_input(img_array_expanded)
+
+    prediction = validator_model.predict(img_preprocessed, verbose=0)[0][0]
+
+    # IMPORTANT: Based on the training output {'chest_xray': 0, 'not_chest_xray': 1}
+    # A low score (close to 0) means it IS a chest X-ray.
+    if prediction < 0.5: # 0.5 is the threshold for binary classification
+        return True
+    else:
+        return False
 
 @st.cache_data
 def generate_grad_cam(_classifier_model, img_array_normalized, last_conv_layer_name="conv5_block3_out"):
     """Generates a Grad-CAM heatmap."""
+    # (Your existing Grad-CAM function - no changes needed)
     grad_model = tf.keras.models.Model([_classifier_model.inputs], [_classifier_model.get_layer(last_conv_layer_name).output, _classifier_model.output])
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array_normalized)
@@ -60,6 +84,7 @@ def generate_grad_cam(_classifier_model, img_array_normalized, last_conv_layer_n
 
 def overlay_heatmap(original_img, heatmap, alpha=0.5):
     """Overlays a heatmap on an image."""
+    # (Your existing overlay function - no changes needed)
     heatmap_resized = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
     heatmap_color = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
     superimposed_img = cv2.addWeighted(original_img, 0.6, heatmap_color, 0.4, 0)
@@ -67,6 +92,7 @@ def overlay_heatmap(original_img, heatmap, alpha=0.5):
 
 # --- UI PAGES ---
 def page_about():
+    # (Your existing about page - no changes needed)
     st.title("Welcome to CliniScan AI 🩺")
     st.markdown("### AI-Powered Lung Abnormality Analysis")
     st.markdown("---")
@@ -91,11 +117,26 @@ def page_about():
     3.  **Visualization & Deployment:** Integrated the best-performing models into this interactive Streamlit web application, featuring Grad-CAM for interpretability.
     """)
 
-def page_live_prediction(detector_models, classifier_model, chosen_detector_name, confidence_threshold):
+
+def page_live_prediction(detector_models, classifier_model, validator_model, chosen_detector_name, confidence_threshold): # <-- ADDED validator_model
     st.header("Live X-Ray Analysis")
     uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["png", "jpg", "jpeg"])
+    
     if uploaded_file:
         original_image = Image.open(uploaded_file).convert("RGB")
+        
+        # --- NEW VALIDATION STEP ---
+        with st.spinner('Validating image type...'):
+            is_valid = is_chest_xray(original_image, validator_model)
+        
+        if not is_valid:
+            st.error("❌ **Validation Failed:** The uploaded image does not appear to be a chest X-ray.")
+            st.warning("Please upload a valid chest X-ray image to proceed.")
+            st.image(original_image, caption="Uploaded Image (Rejected)", width=300)
+            return # Stop execution here
+        
+        # --- IF VALID, PROCEED WITH THE REST OF THE ANALYSIS ---
+        st.success("✔️ **Image Validated:** Chest X-ray detected. Proceeding with analysis.")
         
         st.write("---")
         st.subheader("1. Original Uploaded Image")
@@ -132,6 +173,7 @@ def page_live_prediction(detector_models, classifier_model, chosen_detector_name
                 else: st.info("#### No specific regions detected at this confidence level.")
 
 def page_dashboard(detector_models):
+    # (Your existing dashboard page - no changes needed)
     st.header("Model Performance Dashboard")
     
     def display_detector_performance(model_name_key):
@@ -165,8 +207,9 @@ st.sidebar.title("🩺 CliniScan")
 page = st.sidebar.radio("Navigation", ["About", "Live Prediction", "Model Dashboard"], help="Use this menu to navigate between pages.")
 st.sidebar.write("---")
 
-detector_models, classifier_model = load_models()
-if not detector_models or not classifier_model:
+detector_models, classifier_model, validator_model = load_all_models() # <-- MODIFIED
+if not all([detector_models, classifier_model, validator_model]): # <-- MODIFIED
+    st.error("One or more AI models failed to load. The application cannot continue.")
     st.stop()
 
 if page == "About":
@@ -178,6 +221,6 @@ else:
         confidence_threshold = st.slider("Detection Confidence", 0.05, 1.0, 0.25, 0.01)
     
     if page == "Live Prediction":
-        page_live_prediction(detector_models, classifier_model, chosen_detector_name, confidence_threshold)
+        page_live_prediction(detector_models, classifier_model, validator_model, chosen_detector_name, confidence_threshold) # <-- ADDED validator_model
     elif page == "Model Dashboard":
         page_dashboard(detector_models)
